@@ -5,6 +5,8 @@ from to_do_list_fast_api.database import get_db
 from to_do_list_fast_api.dependencies import get_current_user
 from to_do_list_fast_api.models import Todo, User
 from to_do_list_fast_api.schemas import (
+    BaseResponse,
+    DataResponse,
     PriorityEnum,
     TodoCreate,
     TodoResponse,
@@ -16,7 +18,7 @@ router = APIRouter(prefix="/todos", tags=["Todos"])
 
 @router.get(
     "",
-    response_model=list[TodoResponse],
+    response_model=DataResponse[list[TodoResponse]],
     summary="Get all todos for the current user with optional filtering",
 )
 def get_todos(
@@ -49,12 +51,16 @@ def get_todos(
         )
 
     todos = query.order_by(Todo.created_at.desc()).offset(skip).limit(limit).all()
-    return todos
+    return DataResponse(
+        status=status.HTTP_200_OK,
+        message="Todos retrieved successfully",
+        data=todos,
+    )
 
 
 @router.post(
     "",
-    response_model=TodoResponse,
+    response_model=DataResponse[TodoResponse],
     status_code=status.HTTP_201_CREATED,
     summary="Create a new todo for the current user",
 )
@@ -74,12 +80,16 @@ def create_todo(
     db.add(new_todo)
     db.commit()
     db.refresh(new_todo)
-    return new_todo
+    return DataResponse(
+        status=status.HTTP_201_CREATED,
+        message="Todo created successfully",
+        data=new_todo,
+    )
 
 
 @router.get(
     "/{todo_id}",
-    response_model=TodoResponse,
+    response_model=DataResponse[TodoResponse],
     summary="Get details of a specific todo",
 )
 def get_todo(
@@ -97,12 +107,16 @@ def get_todo(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Todo with ID {todo_id} not found",
         )
-    return todo
+    return DataResponse(
+        status=status.HTTP_200_OK,
+        message="Todo retrieved successfully",
+        data=todo,
+    )
 
 
 @router.put(
     "/{todo_id}",
-    response_model=TodoResponse,
+    response_model=DataResponse[TodoResponse],
     summary="Update a todo",
 )
 def update_todo(
@@ -131,12 +145,16 @@ def update_todo(
 
     db.commit()
     db.refresh(todo)
-    return todo
+    return DataResponse(
+        status=status.HTTP_200_OK,
+        message="Todo updated successfully",
+        data=todo,
+    )
 
 
 @router.patch(
     "/{todo_id}/toggle",
-    response_model=TodoResponse,
+    response_model=DataResponse[TodoResponse],
     summary="Toggle completion status of a todo",
 )
 def toggle_todo_status(
@@ -158,12 +176,17 @@ def toggle_todo_status(
     todo.is_completed = not todo.is_completed
     db.commit()
     db.refresh(todo)
-    return todo
+    return DataResponse(
+        status=status.HTTP_200_OK,
+        message="Todo status toggled successfully",
+        data=todo,
+    )
 
 
 @router.delete(
     "/{todo_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=BaseResponse,
+    status_code=status.HTTP_200_OK,
     summary="Delete a todo",
 )
 def delete_todo(
@@ -184,4 +207,8 @@ def delete_todo(
 
     db.delete(todo)
     db.commit()
-    return None
+    return BaseResponse(
+        status=status.HTTP_200_OK,
+        message="Todo deleted successfully",
+    )
+

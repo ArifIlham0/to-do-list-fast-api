@@ -5,7 +5,14 @@ from sqlalchemy.orm import Session
 from to_do_list_fast_api.database import get_db
 from to_do_list_fast_api.dependencies import get_current_user
 from to_do_list_fast_api.models import User
-from to_do_list_fast_api.schemas import LoginRequest, Token, UserCreate, UserResponse
+from to_do_list_fast_api.schemas import (
+    DataResponse,
+    LoginRequest,
+    LoginResponse,
+    Token,
+    UserCreate,
+    UserResponse,
+)
 from to_do_list_fast_api.security import create_access_token, hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -26,7 +33,7 @@ def authenticate_user(db: Session, username_or_email: str, password: str) -> Use
 
 @router.post(
     "/register",
-    response_model=UserResponse,
+    response_model=DataResponse[UserResponse],
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user",
 )
@@ -51,12 +58,16 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return new_user
+    return DataResponse(
+        status=status.HTTP_201_CREATED,
+        message="User registered successfully",
+        data=new_user,
+    )
 
 
 @router.post(
     "/login",
-    response_model=Token,
+    response_model=LoginResponse,
     summary="Login with OAuth2 form (username/email & password) - Works with Swagger UI",
 )
 def login_for_access_token(
@@ -77,12 +88,19 @@ def login_for_access_token(
         )
 
     access_token = create_access_token(data={"sub": str(user.id)})
-    return Token(access_token=access_token, token_type="bearer")
+    token = Token(access_token=access_token, token_type="bearer")
+    return LoginResponse(
+        status=status.HTTP_200_OK,
+        message="Login successful",
+        data=token,
+        access_token=access_token,
+        token_type="bearer",
+    )
 
 
 @router.post(
     "/login-json",
-    response_model=Token,
+    response_model=DataResponse[Token],
     summary="Login with JSON body (username/email & password)",
 )
 def login_json(
@@ -103,13 +121,23 @@ def login_json(
         )
 
     access_token = create_access_token(data={"sub": str(user.id)})
-    return Token(access_token=access_token, token_type="bearer")
+    token = Token(access_token=access_token, token_type="bearer")
+    return DataResponse(
+        status=status.HTTP_200_OK,
+        message="Login successful",
+        data=token,
+    )
 
 
 @router.get(
     "/me",
-    response_model=UserResponse,
+    response_model=DataResponse[UserResponse],
     summary="Get current logged in user profile",
 )
 def get_me(current_user: User = Depends(get_current_user)):
-    return current_user
+    return DataResponse(
+        status=status.HTTP_200_OK,
+        message="User profile retrieved successfully",
+        data=current_user,
+    )
+

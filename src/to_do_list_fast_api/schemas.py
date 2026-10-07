@@ -1,6 +1,19 @@
 from datetime import datetime
 from enum import Enum
+from typing import Generic, TypeVar
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+T = TypeVar("T")
+
+
+class BaseResponse(BaseModel):
+    status: int
+    message: str
+
+
+class DataResponse(BaseResponse, Generic[T]):
+    data: T
+
 
 
 class PriorityEnum(str, Enum):
@@ -37,6 +50,13 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     user_id: int | None = None
+
+
+class LoginResponse(BaseResponse):
+    data: Token
+    access_token: str
+    token_type: str = "bearer"
+
 
 
 class TodoBase(BaseModel):
