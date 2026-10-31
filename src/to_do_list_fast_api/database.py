@@ -16,7 +16,6 @@ Base = declarative_base()
 
 
 def get_db() -> Generator[Session, None, None]:
-    """Dependency that yields a database session and closes it afterwards."""
     db = SessionLocal()
     try:
         yield db

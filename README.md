@@ -1,0 +1,1 @@
+uvicorn nama_app.main:app --reload
