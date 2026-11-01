@@ -3,11 +3,15 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from to_do_list_fast_api.database import Base, engine
 from to_do_list_fast_api.routers.auth import router as auth_router
+from to_do_list_fast_api.routers.biometric import router as biometric_router
 from to_do_list_fast_api.routers.todos import router as todos_router
+from to_do_list_fast_api.routers.transfer import router as transfer_router
+from to_do_list_fast_api.routers.users import router as users_router
 from to_do_list_fast_api.schemas import DataResponse
 
 
@@ -15,6 +19,13 @@ from to_do_list_fast_api.schemas import DataResponse
 async def lifespan(app: FastAPI):
     try:
         Base.metadata.create_all(bind=engine)
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS balance "
+                    "DOUBLE PRECISION NOT NULL DEFAULT 1000000.0"
+                )
+            )
     except Exception as e:
         print(f"Database connection skipped during startup: {e}")
     yield
@@ -80,6 +91,9 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 
 app.include_router(auth_router)
+app.include_router(biometric_router)
+app.include_router(users_router)
+app.include_router(transfer_router)
 app.include_router(todos_router)
 
 
